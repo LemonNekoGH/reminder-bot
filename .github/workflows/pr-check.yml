@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   lint:
-    name: Lint
+    name: Lint on pull request
     runs-on: ubuntu-latest
     steps:
       - name: Clone repository
@@ -31,7 +31,7 @@ jobs:
         uses: ent/contrib/ci@master
 
   build-test:
-    name: Build
+    name: Build on pull request
     runs-on: ubuntu-latest
     steps:
       - name: Clone repository
@@ -47,7 +47,7 @@ jobs:
         run: go build ./cmd/reminderbot/main.go
 
   test:
-    name: Test
+    name: Test on pull request
     runs-on: ubuntu-latest
     steps:
       - name: Clone repository

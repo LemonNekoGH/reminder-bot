@@ -22,7 +22,7 @@ jobs:
 
   test:
     needs: start
-    name: Test
+    name: Test on main branch
     runs-on: ubuntu-latest
     steps:
       - name: Clone repository
@@ -41,6 +41,7 @@ jobs:
         uses: codecov/codecov-action@v3
 
   build:
+    name: Build on main branch
     needs: test
     runs-on: ubuntu-latest
     steps:
