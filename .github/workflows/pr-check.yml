@@ -44,7 +44,7 @@ jobs:
           cache: false
 
       - name: Build
-        run: go build ./cmd/reminder-bot/main.go
+        run: go build ./cmd/reminderbot/main.go
 
   test:
     name: Test
