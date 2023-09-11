@@ -6,6 +6,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
+var Version = "0.1.0"
+
 const (
 	EnvDatabaseConnectUri = "REMINDER_BOT_DATABASE_URI"
 	EnvTelegramBotToken   = "REMINDER_BOT_TOKEN" //nolint:gosec

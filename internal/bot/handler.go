@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"log"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/google/uuid"
@@ -42,7 +43,7 @@ func handleSetName(c *telegram.Context) bool {
 }
 
 func handleNewReminds(c *telegram.Context) bool {
-	msg := c.NewMessage(c.Chat().ID).Send("请输入提醒项名称")
+	msg := c.NewMessage(c.Chat().ID).WithReply(c.Message().MessageID).Send("请回复提醒项名称到此消息")
 	if msg.MessageID == 0 {
 		return false
 	}
@@ -68,29 +69,34 @@ func handleNewReminds(c *telegram.Context) bool {
 }
 
 func handleSetContent(c *telegram.Context) bool {
+	log.Fatalf("not implemented")
 	return false
 }
 
 func handleSetPeriod(c *telegram.Context) bool {
+	log.Fatalf("not implemented")
 	return false
 }
 
 func handleShowAll(c *telegram.Context) bool {
+	log.Fatalf("not implemented")
 	return false
 }
 
 func handleDelete(c *telegram.Context) bool {
+	log.Fatalf("not implemented")
 	return false
 }
 
 func handleSettings(c *telegram.Context) bool {
+	log.Fatalf("not implemented")
 	return false
 }
 
 func handleCallbackQuery(c *telegram.Context) bool {
 	query := c.CallbackQuery()
 	if query == nil {
-		c.Logger().Info("没有 Callback Query")
+		c.Logger().Debug("没有 Callback Query")
 		return false
 	}
 
@@ -108,7 +114,7 @@ func handleCallbackQuery(c *telegram.Context) bool {
 func handleReply(c *telegram.Context) bool {
 	// 没有被回复的消息，不处理
 	if c.Message().ReplyToMessage == nil {
-		c.Logger().Info("没有被回复的消息")
+		c.Logger().Debug("没有被回复的消息")
 		return false
 	}
 
@@ -137,8 +143,23 @@ func handleReply(c *telegram.Context) bool {
 		_ = c.NewMessage(c.Chat().ID).Send("无权操作")
 	}
 
-	// TODO: 完成操作
-	c.Logger().Infof("操作「%s」收到回复：%s", schema.OperationType(operation.Type), c.Message().Text)
+	text := c.Message().Text
+	operationType := schema.OperationType(operation.Type)
+
+	c.Logger().Debugf("收到回复: %s", text)
+
+	switch schema.OperationType(operation.Type) {
+	case schema.EnumOperationTypeCreate:
+		onNewRemindsReply(c, text, replyToMessageID)
+	case schema.EnumOperationTypeSetName:
+		onSetNameReply(c, text, replyToMessageID)
+	case schema.EnumOperationTypeSetContent:
+		onSetContentReply(c, text, replyToMessageID)
+	case schema.EnumOperationTypeSetCron:
+		onSetCronReply(c, text, replyToMessageID)
+	default:
+		c.Logger().Errorf("未知的操作类型: %s", operationType)
+	}
 
 	return false
 }

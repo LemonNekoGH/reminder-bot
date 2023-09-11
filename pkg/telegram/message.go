@@ -42,6 +42,7 @@ func (m *Message) Send(message string) (returnedMsg tgbotapi.Message) {
 	}
 
 	msg := tgbotapi.NewMessage(m.chatID, message)
+	msg.ParseMode = tgbotapi.ModeMarkdown
 
 	// apply options
 	for _, option := range m.options {
