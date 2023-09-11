@@ -15,7 +15,7 @@ func printBanner() {
 	fmt.Println("=============================")
 	fmt.Println("ReminderBot:    " + config.Version)
 	fmt.Println()
-	fmt.Println("Go     " + runtime.Version())
+	fmt.Println("Go              " + runtime.Version())
 	fmt.Printf("Platform:       %v_%v\n", runtime.GOOS, runtime.GOARCH)
 	fmt.Printf("Number of CPUs: %v\n", runtime.NumCPU())
 	fmt.Println("=============================")

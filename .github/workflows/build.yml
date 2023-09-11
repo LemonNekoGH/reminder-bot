@@ -71,6 +71,7 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
+          build-args: version=${{ github.ref_name }}
           tags: 'ghcr.io/lemonnekogh/reminder-bot:latest, ghcr.io/lemonnekogh/reminder-bot:${{ github.ref_name }}'
 
   end:
