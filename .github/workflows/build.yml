@@ -20,7 +20,7 @@ jobs:
           message: |
             GitHub Actions Start
             Workflow Name: ${{ github.workflow }}
-            Url: https://github.com/LemonNekoGH/reminder-bot
+            Url: https://github.com/LemonNekoGH/reminderbot
             Trigger: `${{ github.ref_name }}` `${{ github.event.commits[0].id }}`
 
   test:
@@ -77,7 +77,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           build-args: version=${{ github.ref_name }}
-          tags: 'ghcr.io/lemonnekogh/reminder-bot:latest, ghcr.io/lemonnekogh/reminder-bot:${{ github.ref_name }}'
+          tags: 'ghcr.io/lemonnekogh/reminderbot:latest, ghcr.io/lemonnekogh/reminderbot:${{ github.ref_name }}'
 
   end:
     needs: build
@@ -92,5 +92,5 @@ jobs:
           message: |
             GitHub Actions Start
             Workflow Name: ${{ github.workflow }}
-            Url: https://github.com/LemonNekoGH/reminder-bot
+            Url: https://github.com/LemonNekoGH/reminderbot
             Trigger: `${{ github.ref_name }}` `${{ github.event.commits[0].id }}`
