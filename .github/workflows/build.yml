@@ -1,0 +1,92 @@
+name: Build Docker Image
+on: 
+  push:
+    tags:
+      - '*'
+
+jobs:
+  start:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send start message to telegram
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TG_TO }}
+          token: ${{ secrets.TG_TOKEN }}
+          format: markdown
+          message: |
+            GitHub Actions Start
+            Workflow Name: ${{ github.workflow }}
+            Url: https://github.com/LemonNekoGH/ReminderBot
+            Trigger: `${{ github.ref_name }}` `${{ github.event.commits[0].id }}`
+
+  test:
+    needs: start
+    name: Test on main branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Setup dotnet environment
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 7.x
+          cache: true
+
+      - name: Install dependencies
+        run: dotnet restore --locked-mode
+
+      - name: Run test
+        run: dotnet test --collect:"XPlat Code Coverage"
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+
+  build:
+    name: Build on main branch
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to GitHub Container 
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: version=${{ github.ref_name }}
+          tags: |
+            ghcr.io/lemonnekogh/reminder-bot:${{ github.ref_name }}
+            ghcr.io/lemonnekogh/reminder-bot:latest
+
+  end:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send start message to telegram
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TG_TO }}
+          token: ${{ secrets.TG_TOKEN }}
+          format: markdown
+          message: |
+            GitHub Actions Start
+            Workflow Name: ${{ github.workflow }}
+            Url: https://github.com/LemonNekoGH/ReminderBot
+            Trigger: `${{ github.ref_name }}` `${{ github.event.commits[0].id }}`

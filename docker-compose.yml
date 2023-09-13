@@ -1,0 +1,25 @@
+version: "v3"
+
+services:
+  postgres:
+    image: postgres:15.4-alpine
+    ports:
+      - 5432
+    environment:
+      - POSTGRES_DB=reminder_bot
+      - POSTGRES_USER=reminder_bot
+      - POSTGRES_PASSWORD=reminder_bot
+    healthcheck:
+      test: pg_isready -U reminder_bot -d reminder_bot
+      interval: 5s
+      timeout: 3s
+      retries: 5
+  
+  reminder-bot:
+    image: reminder-bot
+    env_file: .env
+    build:
+      dockerfile: ./Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
