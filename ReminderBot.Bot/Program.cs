@@ -1,10 +1,11 @@
-using ReminderBot.Bot;
-
 using System.Runtime.InteropServices;
+
+using ReminderBot.Bot;
 
 internal class Program
 {
-    private static string GetOS() {
+    private static string GetOS()
+    {
         if (OperatingSystem.IsMacOS())
             return "Darwin";
         else if (OperatingSystem.IsWindows())
