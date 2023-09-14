@@ -26,31 +26,11 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 7.x
-          cache: true
 
       - name: Lint
         run: |
           dotnet tool install -g dotnet-format
-          dotnet format -v diag 'ReminderBot.sln'
-
-  build-test:
-    name: Build on pull request
-    runs-on: ubuntu-latest
-    steps:
-      - name: Clone repository
-        uses: actions/checkout@v4
-
-      - name: Setup dotnet environment
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 7.x
-          cache: true
-
-      - name: Install dependencies
-        run: dotnet restore --locked-mode
-
-      - name: Run build
-        run: dotnet build
+          dotnet format -v diag --verify-no-changes 'ReminderBot.sln'
 
   test:
     name: Test on pull request
@@ -63,12 +43,11 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 7.x
-          cache: true
-
-      - run: dotnet restore --locked-mode
 
       - name: Run test
         run: dotnet test --collect:"XPlat Code Coverage"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

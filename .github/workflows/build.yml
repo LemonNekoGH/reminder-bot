@@ -32,16 +32,14 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 7.x
-          cache: true
-
-      - name: Install dependencies
-        run: dotnet restore --locked-mode
 
       - name: Run test
         run: dotnet test --collect:"XPlat Code Coverage"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   build:
     name: Build on main branch
