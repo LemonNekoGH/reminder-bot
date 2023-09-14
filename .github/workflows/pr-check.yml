@@ -30,7 +30,7 @@ jobs:
       - name: Lint
         run: |
           dotnet tool install -g dotnet-format
-          dotnet format -v diag 'ReminderBot.sln'
+          dotnet format -v diag --verify-no-changes 'ReminderBot.sln'
 
   test:
     name: Test on pull request
