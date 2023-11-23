@@ -14,8 +14,11 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    profiles:
+      - x64
+      - arm64
   
-  reminder-bot:
+  reminder-bot-x64:
     image: reminder-bot
     env_file: .env
     build:
@@ -23,3 +26,18 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    profiles:
+      - x64
+
+  reminder-bot-arm64:
+    image: reminder-bot
+    env_file: .env
+    build:
+      dockerfile: ./Dockerfile
+      args:
+        - PLATFORM=linux-arm64
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - arm64

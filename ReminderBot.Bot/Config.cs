@@ -2,29 +2,29 @@ namespace ReminderBot.Bot;
 
 using DotNetEnv;
 
-public class Config
+public static class Config
 {
     public static string BotToken { get; private set; } = "";
-    public static string DbConnectionURL { get; private set; } = "";
+    public static string DbSourceString { get; private set; } = "";
 
-    private const string BotTokenEnvVar = "REMINDER_BOT_TOKEN";
-    private const string DbConnectionURLEnvVar = "REMINDER_BOT_DATABASE_URL";
+    private const string botTokenEnvVar = "REMINDER_BOT_TOKEN";
+    private const string dbSourceStringEnvVar = "REMINDER_BOT_DATABASE_SOURCE";
 
     public static void LoadConfig()
     {
         var env = Env.Load(options: LoadOptions.NoEnvVars()).ToDictionary();
-        BotToken = env.GetValueOrDefault(BotTokenEnvVar, "");
+        BotToken = env.GetValueOrDefault(botTokenEnvVar, "");
         if (BotToken == "")
         {
-            BotToken = Environment.GetEnvironmentVariable(BotTokenEnvVar) ??
-                throw new EnvVariableNotFoundException("You need provide token for bot.", BotTokenEnvVar);
+            BotToken = Environment.GetEnvironmentVariable(botTokenEnvVar) ??
+                throw new EnvVariableNotFoundException("You need provide token for bot.", botTokenEnvVar);
         }
 
-        DbConnectionURL = env.GetValueOrDefault(DbConnectionURLEnvVar, "");
-        if (DbConnectionURL == "")
+        DbSourceString = env.GetValueOrDefault(dbSourceStringEnvVar, "");
+        if (DbSourceString == "")
         {
-            DbConnectionURL = Environment.GetEnvironmentVariable(DbConnectionURLEnvVar) ??
-                throw new EnvVariableNotFoundException("You need provide database connection url for data persistence.", DbConnectionURLEnvVar);
+            DbSourceString = Environment.GetEnvironmentVariable(dbSourceStringEnvVar) ??
+                throw new EnvVariableNotFoundException("You need provide database connection url for data persistence.", dbSourceStringEnvVar);
         }
     }
 }

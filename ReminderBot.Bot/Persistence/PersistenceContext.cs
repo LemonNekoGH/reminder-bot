@@ -1,8 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace ReminderBot.Bot.Database;
+using ReminderBot.Bot.Persistence.Model;
 
-public partial class PersistenceContext : DbContext
+namespace ReminderBot.Bot.Persistence;
+
+public class PersistenceContext : DbContext
 {
-    public PersistenceContext() : base() { }
+    public DbSet<Settings>? Settings { get; set; }
+    public DbSet<RemindItem>? RemindItems { get; set; }
+    public DbSet<Operations>? Operations { get; set; }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder options) => options.UseNpgsql(Config.DbSourceString);
 }

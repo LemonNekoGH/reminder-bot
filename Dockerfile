@@ -1,27 +1,26 @@
-FROM mcr.microsoft.com/dotnet/sdk:7.0-alpine as builder
+FROM mcr.microsoft.com/dotnet/sdk:8.0 as builder
 
 ARG VERSION=0.1.0
+ARG PLATFORM=linux-x64
 
 WORKDIR /app
 
-COPY ReminderBot.Bot/ReminderBot.csproj ReminderBot.csproj
+COPY ReminderBot.Bot/ReminderBot.Bot.csproj ReminderBot.Bot.csproj
 
 RUN dotnet restore
 
 COPY ReminderBot.Bot .
 
-# Inject semver into app
-RUN echo "namespace ReminderBot.Bot;" > BotVersion.cs
-RUN echo "" >> BotVersion.cs
-RUN echo "public class BotVersion {" >> BotVersion.cs
-RUN echo "    public const string Version = \"${VERSION}\";" >> BotVersion.cs
-RUN echo "}" >> BotVersion.cs
-RUN echo "" >> BotVersion.cs
+RUN dotnet publish -c Release -r ${PLATFORM}
 
-RUN dotnet publish -c Release /p:Version=${VERSION}
+FROM ubuntu as runner
 
-FROM mcr.microsoft.com/dotnet/runtime:7.0-alpine as runner
+RUN apt update && apt install libicu-dev ca-certificates -y && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /app/bin/Release/net7.0/publish /publish
+ARG PLATFORM=linux-x64
 
-ENTRYPOINT [ "dotnet", "/publish/ReminderBot.dll" ]
+WORKDIR /app
+
+COPY --from=builder /app/bin/$PLATFORM/Release/net8.0/$PLATFORM/publish/ReminderBot.Bot /app/ReminderBot.Bot
+
+ENTRYPOINT [ "/app/ReminderBot.Bot" ]

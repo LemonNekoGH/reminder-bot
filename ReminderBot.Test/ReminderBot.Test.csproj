@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
@@ -22,7 +22,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
 
-    <ProjectReference Include="../ReminderBot.Bot/ReminderBot.csproj"></ProjectReference>
+    <ProjectReference Include="../ReminderBot.Bot/ReminderBot.Bot.csproj"></ProjectReference>
   </ItemGroup>
 
 </Project>
