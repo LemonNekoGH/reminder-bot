@@ -14,7 +14,8 @@ public record Settings
     [Column("allow_all_users")]
     public bool AllowAllUsers { get; set; }
 
-    public static async Task<bool> IsAllowAllUsersAsync(long chatId) {
+    public static async Task<bool> IsAllowAllUsersAsync(long chatId)
+    {
         await using var ctx = new PersistenceContext();
         Settings? settings = await ctx.Settings.FirstOrDefaultAsync(x => x.ChatId == chatId);
         return settings?.AllowAllUsers ?? false;

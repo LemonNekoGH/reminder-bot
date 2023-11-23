@@ -38,12 +38,12 @@ public class CommandHandler(ITelegramBotClient client) : Handler<Command>(client
 
     }
 
-    public async void HandleSetContentAsync(Command cmd) {}
-    public async void HandleSetPeriodAsync(Command cmd) {}
-    public async void HandleShowAllAsync(Command cmd) {}
+    public async void HandleSetContentAsync(Command cmd) { }
+    public async void HandleSetPeriodAsync(Command cmd) { }
+    public async void HandleShowAllAsync(Command cmd) { }
     public async void HandleDeleteAsync(Command cmd)
     {
 
     }
-    public async void HandleHelpAsync(Command cmd) {}
+    public async void HandleHelpAsync(Command cmd) { }
 }

@@ -1,5 +1,6 @@
 namespace ReminderBot.Bot.Utils;
 
-public class Utils {
+public class Utils
+{
 
 }

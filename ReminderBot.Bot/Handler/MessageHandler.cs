@@ -9,7 +9,8 @@ namespace ReminderBot.Bot.Handler;
 
 public class MessageHandler(ITelegramBotClient client) : Handler<Message>(client)
 {
-    public async void HandleMessageAsync(Message msg) {
+    public async void HandleMessageAsync(Message msg)
+    {
         await using var ctx = new PersistenceContext();
 
     }

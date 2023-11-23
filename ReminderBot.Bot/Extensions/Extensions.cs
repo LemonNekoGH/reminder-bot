@@ -14,8 +14,10 @@ public static class MessageExtension
 
     public static string FromUserName(this Message message) => message.From == null ? "unknown" : message.From.Username ?? "unknown";
 
-    public static async Task<bool> IsFromAdminAsync(this Message message, ITelegramBotClient bot) {
-        if (message.FromUserId() == 0) {
+    public static async Task<bool> IsFromAdminAsync(this Message message, ITelegramBotClient bot)
+    {
+        if (message.FromUserId() == 0)
+        {
             return false;
         }
 
@@ -36,7 +38,7 @@ public static class CallbackQueryExtension
 
 public static class UpdateExtension
 {
-    public static bool IsCommand(this Update update) => update.Message is {Text: not null} &&
+    public static bool IsCommand(this Update update) => update.Message is { Text: not null } &&
         update.Message.Text.StartsWith("/");
 
     public static string Command(this Update update)

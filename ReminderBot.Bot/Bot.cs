@@ -47,21 +47,21 @@ public class Bot(ITelegramBotClient client)
         switch (update.Type)
         {
             case UpdateType.Message when update.IsCommand():
-            {
-                this.CommandReceived?.Invoke(new Command(update.Message!, update.Command()));
-                return;
-            }
+                {
+                    this.CommandReceived?.Invoke(new Command(update.Message!, update.Command()));
+                    return;
+                }
             case UpdateType.Message:
-            {
-                this.CommonMessageReceived?.Invoke(update.Message!);
-                return;
-            }
+                {
+                    this.CommonMessageReceived?.Invoke(update.Message!);
+                    return;
+                }
             case UpdateType.CallbackQuery:
-            {
-                this.CallbackQueryReceived?.Invoke(new CallbackQuery());
+                {
+                    this.CallbackQueryReceived?.Invoke(new CallbackQuery());
 
-                return;
-            }
+                    return;
+                }
             default:
                 throw new NotSupportedException($"{update.Type} is not support");
         }

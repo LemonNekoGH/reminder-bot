@@ -6,7 +6,8 @@ namespace ReminderBot.Bot.Persistence.Model;
 
 [PrimaryKey("Id")]
 [Table("remind_items", Schema = "reminder_bot")]
-public record class RemindItem {
+public record class RemindItem
+{
     [Column("id")]
     public string Id = new Guid().ToString();
 
