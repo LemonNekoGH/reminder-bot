@@ -10,7 +10,9 @@ teloxide = { version = "0.12", features = ["macros"] }
 log = "0.4"
 pretty_env_logger = "0.5.0"
 tokio = { version =  "1.8", features = ["rt-multi-thread", "macros", "rt"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_yaml = "0.9"
 chrono = "0.4.34"
 cron-parser = "0.8.1"
+dotenvy = "0.15.7"
+diesel = { version = "2.1.0", features = ["postgres", "uuid"] }
+chrono-tz = "0.8.6"
+uuid = "1.7.0"

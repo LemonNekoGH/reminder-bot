@@ -1,17 +1,16 @@
-use chrono::Utc;
-use serde::Deserialize;
-use std::fmt::format;
-use std::fs::File;
-use std::io::Read;
-use std::path::Path;
-use std::str::FromStr;
-use teloxide::{prelude::*, utils::command::BotCommands};
+mod schema;
 
-#[derive(Deserialize, Debug, PartialEq)]
-struct Config {
-    bot_token: String,
-    pg_data_source: String,
-}
+use chrono::{DateTime, TimeZone, Utc};
+use chrono_tz::Tz;
+use cron_parser::ParseError;
+use diesel::prelude::*;
+use dotenvy::dotenv;
+use log::info;
+use reminder_bot::models::{NewReminder, Reminders};
+use reminder_bot::{establish_connection, save_new_reminder};
+use std::env;
+use std::fmt::format;
+use teloxide::{prelude::*, utils::command::BotCommands, RequestError};
 
 #[derive(BotCommands, Clone)]
 #[command(
@@ -35,41 +34,21 @@ enum Command {
     About,
 }
 
-const ENV_NAME_BOT_TOKEN: &str = "TG_BOT_TOKEN";
-const ENV_NAME_DB_DATA_SOURCE: &str = "DB_DATA_SOURCE";
-
-fn load_config() -> (String, String) {
-    log::trace!("loading configuration from environment variables...");
-
-    if dotenv().is_err() {
-        log::info!("not .env file found, skipped");
+fn parse_cron_exp<Tz: TimeZone>(exp: &str, dt: &DateTime<Tz>) -> Result<DateTime<Tz>, ParseError> {
+    // check number of expression fields, because cron_parser library won't do this check
+    if exp.trim().split(" ").count() < 5 {
+        return Err(ParseError::InvalidCron);
     }
 
-    let bot_token = env::var(ENV_NAME_BOT_TOKEN)
-        .expect(format!("environment variable {ENV_NAME_BOT_TOKEN} not found").as_str());
-    assert_ne!(
-        "", bot_token,
-        "environment variable {ENV_NAME_BOT_TOKEN} cannot be empty"
-    );
-
-    let db_data_source = env::var(ENV_NAME_DB_DATA_SOURCE)
-        .expect(format!("environment variable {ENV_NAME_DB_DATA_SOURCE} not found").as_str());
-    assert_ne!(
-        "", db_data_source,
-        "environment variable {ENV_NAME_DB_DATA_SOURCE} cannot be empty"
-    );
-
-    log::trace!("configuration loaded");
-
-    (bot_token, db_data_source)
+    cron_parser::parse(exp, dt)
 }
 
 #[tokio::main]
 async fn main() {
     pretty_env_logger::init();
-
-    let config = load_config();
-    log::debug!("configuration loaded");
+    if dotenv().is_err() {
+        info!(".env file not exists, skipped loading env variables");
+    }
 
     let _version = option_env!("CARGO_PKG_VERSION").unwrap_or("0.1.0-alpha.1");
 
@@ -79,7 +58,7 @@ async fn main() {
     println!("Version: {_version}");
     println!("========================");
 
-    let bot = Bot::new(config.bot_token);
+    let bot = Bot::new(env::var("TG_BOT_TOKEN").expect("env variable TG_BOT_TOKEN must be set"));
     Command::repl(bot, process_cmd).await;
 
     log::info!("bot started")
@@ -92,41 +71,7 @@ async fn process_cmd(bot: Bot, msg: Message, cmd: Command) -> ResponseResult<()>
                 .await?;
         }
         Command::NewReminder(arg) => {
-            let blank_index = arg.find(" ").unwrap_or(0);
-            let (content, cron_exp) = arg.split_at(blank_index);
-
-            // TODO: check if administrator
-            log::debug!(
-                "received new reminder request from {}, cron expression '{cron_exp}'",
-                msg.chat.id
-            );
-
-            log::trace!("parsing cron expression");
-            let mut parse_result = match cron_parser::parse(cron_exp, &Utc::now()) {
-                Ok(result) => result,
-                Err(why) => {
-                    log::debug!("cron expression not valid, {:?}", why);
-                    bot.send_message(
-                        msg.chat.id,
-                        format!("{cron_exp} 不是一个有效的 cron 表达式"),
-                    )
-                    .await?;
-
-                    return Ok(());
-                }
-            };
-
-            log::trace!("get next 5th runs time");
-            let mut next_5_runs =
-                format!("好的，你的提醒内容是「{content}」，将来 5 次提醒时间如下：\n");
-            next_5_runs.push_str(parse_result.to_string().as_str());
-            next_5_runs.push_str("\n");
-            for _ in 0..5 {
-                parse_result = cron_parser::parse(cron_exp, &parse_result).unwrap();
-                next_5_runs.push_str(parse_result.to_string().as_str());
-                next_5_runs.push_str("\n");
-            }
-            bot.send_message(msg.chat.id, next_5_runs).await?;
+            process_new_reminder(bot, msg, arg).await?;
         }
         Command::DeleteReminder(id) => {
             bot.send_message(msg.chat.id, "command not implemented")
@@ -151,4 +96,61 @@ async fn process_cmd(bot: Bot, msg: Message, cmd: Command) -> ResponseResult<()>
     }
 
     Ok(())
+}
+
+async fn process_new_reminder(
+    bot: Bot,
+    msg: Message,
+    arg: String,
+) -> Result<Message, RequestError> {
+    let blank_index = arg.find(" ").unwrap_or(0);
+    let (c, exp) = arg.split_at(blank_index);
+
+    // TODO: check if administrator
+    log::info!(
+        "received new reminder request from {}, cron expression '{exp}'",
+        msg.chat.id
+    );
+
+    log::trace!("parsing cron expression");
+
+    let mut parse_result = match parse_cron_exp(exp, &Utc::now()) {
+        Ok(result) => result,
+        Err(why) => {
+            log::trace!("cron expression not valid, {:?}", why);
+
+            return bot
+                .send_message(msg.chat.id, format!("{exp} 不是一个有效的 cron 表达式"))
+                .await;
+        }
+    };
+
+    log::trace!("inserting data to database");
+
+    let result = save_new_reminder(
+        msg.chat.id.0,
+        msg.chat.id.0,
+        String::from(c),
+        String::from(exp),
+    );
+    if result.is_err() {
+        log::warn!(
+            "error when insert reminder data: {:?}",
+            result.err().unwrap()
+        );
+        return bot
+            .send_message(msg.chat.id, "出现了一些问题，请稍后再试")
+            .await;
+    }
+
+    log::trace!("get next 5th runs time");
+    let mut next_5_runs = "好的，你的提醒项已经保存，将来 5 次提醒时间如下：\n".to_string();
+    next_5_runs.push_str(parse_result.to_string().as_str());
+    next_5_runs.push_str("\n");
+    for _ in 0..5 {
+        parse_result = cron_parser::parse(exp, &parse_result).unwrap();
+        next_5_runs.push_str(parse_result.to_string().as_str());
+        next_5_runs.push_str("\n");
+    }
+    bot.send_message(msg.chat.id, next_5_runs).await
 }
