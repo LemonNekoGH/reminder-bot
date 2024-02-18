@@ -35,30 +35,33 @@ enum Command {
     About,
 }
 
-fn load_config() -> Config {
-    let path = Path::new("config.local.yaml");
-    let _display = path.display();
+const ENV_NAME_BOT_TOKEN: &str = "TG_BOT_TOKEN";
+const ENV_NAME_DB_DATA_SOURCE: &str = "DB_DATA_SOURCE";
 
-    let mut file = match File::open(&path) {
-        Ok(file) => file,
-        Err(why) => panic!("could not open config file {_display}: {:?}", why),
-    };
+fn load_config() -> (String, String) {
+    log::trace!("loading configuration from environment variables...");
 
-    let mut content = String::new();
-    match file.read_to_string(&mut content) {
-        Ok(_) => (),
-        Err(why) => panic!("could not read config file {_display}: {:?}", why),
-    };
+    if dotenv().is_err() {
+        log::info!("not .env file found, skipped");
+    }
 
-    let config = match serde_yaml::from_str::<Config>(content.as_str()) {
-        Ok(c) => c,
-        Err(why) => panic!("could not deserialize config file {_display}: {:?}", why),
-    };
+    let bot_token = env::var(ENV_NAME_BOT_TOKEN)
+        .expect(format!("environment variable {ENV_NAME_BOT_TOKEN} not found").as_str());
+    assert_ne!(
+        "", bot_token,
+        "environment variable {ENV_NAME_BOT_TOKEN} cannot be empty"
+    );
 
-    assert_ne!("", config.bot_token, "bot_token can not be empty");
-    assert_ne!("", config.pg_data_source, "pg_data_source can not be empty");
+    let db_data_source = env::var(ENV_NAME_DB_DATA_SOURCE)
+        .expect(format!("environment variable {ENV_NAME_DB_DATA_SOURCE} not found").as_str());
+    assert_ne!(
+        "", db_data_source,
+        "environment variable {ENV_NAME_DB_DATA_SOURCE} cannot be empty"
+    );
 
-    config
+    log::trace!("configuration loaded");
+
+    (bot_token, db_data_source)
 }
 
 #[tokio::main]
