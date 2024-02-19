@@ -1,6 +1,6 @@
-use crate::models::{NewReminder, Reminders};
-use diesel::query_builder::Query;
-use diesel::{prelude::*, Connection, PgConnection, RunQueryDsl};
+use chrono::{DateTime, TimeZone};
+use cron_parser::ParseError;
+use diesel::{Connection, PgConnection};
 use std::env;
 
 pub mod models;
@@ -11,22 +11,14 @@ pub fn establish_connection() -> PgConnection {
     PgConnection::establish(&db_url).unwrap_or_else(|_| panic!("error connecting to {}", db_url))
 }
 
-pub fn save_new_reminder(
-    chat_id: i64,
-    owner: i64,
-    content: String,
-    cron_exp: String,
-) -> QueryResult<Reminders> {
-    use crate::schema::reminders;
-    let new_reminder = NewReminder {
-        chat_id: &chat_id,
-        owner: &owner,
-        content: &content,
-        cron_exp: &cron_exp,
-    };
-    let pg_connection = &mut establish_connection();
-    diesel::insert_into(reminders::table)
-        .values(&new_reminder)
-        .returning(Reminders::as_returning())
-        .get_result(pg_connection)
+pub fn parse_cron_exp<Tz: TimeZone>(
+    exp: &str,
+    dt: &DateTime<Tz>,
+) -> Result<DateTime<Tz>, ParseError> {
+    // check number of expression fields, because cron_parser library won't do this check
+    if exp.trim().split(" ").count() < 5 {
+        return Err(ParseError::InvalidCron);
+    }
+
+    cron_parser::parse(exp, dt)
 }

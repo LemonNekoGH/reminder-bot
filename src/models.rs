@@ -1,5 +1,7 @@
 use crate::schema::reminders;
 use diesel::prelude::*;
+use std::ops::DerefMut;
+use std::sync::{Arc, Mutex};
 
 // #[derive(Queryable, Selectable)]
 // #[diesel(table_name = crate::schema::settings)]
@@ -28,4 +30,25 @@ pub struct NewReminder<'a> {
     pub owner: &'a i64,
     pub content: &'a String,
     pub cron_exp: &'a String,
+}
+
+pub fn save_new_reminder(
+    chat_id: i64,
+    owner: i64,
+    content: String,
+    cron_exp: String,
+    db: Arc<Mutex<PgConnection>>,
+) -> QueryResult<Reminders> {
+    let new_reminder = NewReminder {
+        chat_id: &chat_id,
+        owner: &owner,
+        content: &content,
+        cron_exp: &cron_exp,
+    };
+    let mut binding = db.lock().unwrap();
+    let db = binding.deref_mut();
+    diesel::insert_into(reminders::table)
+        .values(&new_reminder)
+        .returning(Reminders::as_returning())
+        .get_result(db)
 }

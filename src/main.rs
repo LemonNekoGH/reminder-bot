@@ -1,15 +1,12 @@
 mod schema;
 
-use chrono::{DateTime, TimeZone, Utc};
-use chrono_tz::Tz;
-use cron_parser::ParseError;
+use chrono::Utc;
 use diesel::prelude::*;
 use dotenvy::dotenv;
-use log::info;
-use reminder_bot::models::{NewReminder, Reminders};
-use reminder_bot::{establish_connection, save_new_reminder};
+use reminder_bot::models::save_new_reminder;
+use reminder_bot::{establish_connection, parse_cron_exp};
 use std::env;
-use std::fmt::format;
+use std::sync::{Arc, Mutex};
 use teloxide::{prelude::*, utils::command::BotCommands, RequestError};
 
 #[derive(BotCommands, Clone)]
@@ -34,20 +31,11 @@ enum Command {
     About,
 }
 
-fn parse_cron_exp<Tz: TimeZone>(exp: &str, dt: &DateTime<Tz>) -> Result<DateTime<Tz>, ParseError> {
-    // check number of expression fields, because cron_parser library won't do this check
-    if exp.trim().split(" ").count() < 5 {
-        return Err(ParseError::InvalidCron);
-    }
-
-    cron_parser::parse(exp, dt)
-}
-
 #[tokio::main]
 async fn main() {
     pretty_env_logger::init();
     if dotenv().is_err() {
-        info!(".env file not exists, skipped loading env variables");
+        log::info!(".env file not exists, skipped loading env variables");
     }
 
     let _version = option_env!("CARGO_PKG_VERSION").unwrap_or("0.1.0-alpha.1");
@@ -58,42 +46,47 @@ async fn main() {
     println!("Version: {_version}");
     println!("========================");
 
+    let db = Arc::new(Mutex::new(establish_connection()));
     let bot = Bot::new(env::var("TG_BOT_TOKEN").expect("env variable TG_BOT_TOKEN must be set"));
-    Command::repl(bot, process_cmd).await;
-
-    log::info!("bot started")
+    Command::repl(bot, move |bot: Bot, msg: Message, cmd: Command| {
+        process_cmd(bot, msg, cmd, db.clone())
+    })
+    .await
 }
 
-async fn process_cmd(bot: Bot, msg: Message, cmd: Command) -> ResponseResult<()> {
+async fn process_cmd(
+    bot: Bot,
+    msg: Message,
+    cmd: Command,
+    db: Arc<Mutex<PgConnection>>,
+) -> Result<(), RequestError> {
     match cmd {
         Command::Help => {
             bot.send_message(msg.chat.id, Command::descriptions().to_string())
-                .await?;
+                .await?
         }
-        Command::NewReminder(arg) => {
-            process_new_reminder(bot, msg, arg).await?;
-        }
+        Command::NewReminder(arg) => process_new_reminder(bot, msg, arg, db).await?,
         Command::DeleteReminder(id) => {
             bot.send_message(msg.chat.id, "command not implemented")
-                .await?;
+                .await?
         }
         Command::ListReminders => {
             bot.send_message(msg.chat.id, "command not implemented")
-                .await?;
+                .await?
         }
         Command::SetAllowAllMember(allow) => {
             bot.send_message(msg.chat.id, "command not implemented")
-                .await?;
+                .await?
         }
         Command::About => {
             bot.send_message(msg.chat.id, "command not implemented")
-                .await?;
+                .await?
         }
         Command::SetTimezone(timezone) => {
             bot.send_message(msg.chat.id, "command not implemented")
-                .await?;
+                .await?
         }
-    }
+    };
 
     Ok(())
 }
@@ -102,6 +95,7 @@ async fn process_new_reminder(
     bot: Bot,
     msg: Message,
     arg: String,
+    db: Arc<Mutex<PgConnection>>,
 ) -> Result<Message, RequestError> {
     let blank_index = arg.find(" ").unwrap_or(0);
     let (c, exp) = arg.split_at(blank_index);
@@ -132,6 +126,7 @@ async fn process_new_reminder(
         msg.chat.id.0,
         String::from(c),
         String::from(exp),
+        db,
     );
     if result.is_err() {
         log::warn!(
