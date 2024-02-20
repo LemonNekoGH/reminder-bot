@@ -48,6 +48,7 @@ async fn main() {
 
     let db = Arc::new(Mutex::new(establish_connection()));
     let bot = Bot::new(env::var("TG_BOT_TOKEN").expect("env variable TG_BOT_TOKEN must be set"));
+    // `move` is important
     Command::repl(bot, move |bot: Bot, msg: Message, cmd: Command| {
         process_cmd(bot, msg, cmd, db.clone())
     })
