@@ -1,70 +1,152 @@
-use log::{debug, error, info};
-use serde::Deserialize;
-use std::fs::File;
-use std::io::Read;
-use std::path::Path;
-use teloxide::prelude::*;
-use teloxide::types::Message;
+mod schema;
 
-#[derive(Deserialize, Debug, PartialEq)]
-struct Config {
-    bot_token: String,
-    pg_data_source: String,
-}
+use chrono::Utc;
+use diesel::prelude::*;
+use dotenvy::dotenv;
+use reminder_bot::models::save_new_reminder;
+use reminder_bot::{establish_connection, parse_cron_exp};
+use std::env;
+use std::sync::{Arc, Mutex};
+use teloxide::{prelude::*, utils::command::BotCommands, RequestError};
 
-fn load_config() -> Config {
-    let path = Path::new("config.local.yaml");
-    let _display = path.display();
-
-    let mut file = match File::open(&path) {
-        Ok(file) => file,
-        Err(why) => panic!("could not open config file {_display}: {:?}", why),
-    };
-
-    let mut content = String::new();
-    match file.read_to_string(&mut content) {
-        Ok(_) => (),
-        Err(why) => panic!("could not read config file {_display}: {:?}", why),
-    };
-
-    let config = match serde_yaml::from_str::<Config>(content.as_str()) {
-        Ok(c) => c,
-        Err(why) => panic!("could not deserialize config file {_display}: {:?}", why),
-    };
-
-    assert_ne!("", config.bot_token, "bot_token can not be empty");
-    assert_ne!("", config.pg_data_source, "pg_data_source can not be empty");
-
-    config
+#[derive(BotCommands, Clone)]
+#[command(
+    rename_rule = "snake_case",
+    description = "欢迎使用 ReminderBot，以下是可以使用的命令："
+)]
+enum Command {
+    #[command(description = "显示所有可用命令")]
+    Help,
+    #[command(description = "允许或禁止非管理员使用 ReminderBot")]
+    SetAllowAllMember(bool),
+    #[command(description = "修改 ReminderBot 使用的时区")]
+    SetTimezone(String),
+    #[command(description = "新建提醒事项")]
+    NewReminder(String),
+    #[command(description = "删除提醒事项")]
+    DeleteReminder(i32),
+    #[command(description = "显示所有提醒项")]
+    ListReminders,
+    #[command(description = "显示 ReminderBot 相关信息")]
+    About,
 }
 
 #[tokio::main]
 async fn main() {
-    let version = option_env!("CARGO_PKG_VERSION").unwrap_or("0.1.0-alpha.1");
+    pretty_env_logger::init();
+    if dotenv().is_err() {
+        log::info!(".env file not exists, skipped loading env variables");
+    }
+
+    let _version = option_env!("CARGO_PKG_VERSION").unwrap_or("0.1.0-alpha.1");
 
     println!("========================");
     println!("Reminder Bot");
     println!();
-    println!("Version: {version}");
+    println!("Version: {_version}");
     println!("========================");
 
-    pretty_env_logger::init();
+    let db = Arc::new(Mutex::new(establish_connection()));
+    let bot = Bot::new(env::var("TG_BOT_TOKEN").expect("env variable TG_BOT_TOKEN must be set"));
+    // `move` is important
+    Command::repl(bot, move |bot: Bot, msg: Message, cmd: Command| {
+        process_cmd(bot, msg, cmd, db.clone())
+    })
+    .await
+}
 
-    if version.contains("alpha") || version.contains("beta") || version.contains("rc") {
-        log::set_max_level(log::LevelFilter::Trace)
-    } else {
-        log::set_max_level(log::LevelFilter::Info)
+async fn process_cmd(
+    bot: Bot,
+    msg: Message,
+    cmd: Command,
+    db: Arc<Mutex<PgConnection>>,
+) -> Result<(), RequestError> {
+    match cmd {
+        Command::Help => {
+            bot.send_message(msg.chat.id, Command::descriptions().to_string())
+                .await?
+        }
+        Command::NewReminder(arg) => process_new_reminder(bot, msg, arg, db).await?,
+        Command::DeleteReminder(id) => {
+            bot.send_message(msg.chat.id, "command not implemented")
+                .await?
+        }
+        Command::ListReminders => {
+            bot.send_message(msg.chat.id, "command not implemented")
+                .await?
+        }
+        Command::SetAllowAllMember(allow) => {
+            bot.send_message(msg.chat.id, "command not implemented")
+                .await?
+        }
+        Command::About => {
+            bot.send_message(msg.chat.id, "command not implemented")
+                .await?
+        }
+        Command::SetTimezone(timezone) => {
+            bot.send_message(msg.chat.id, "command not implemented")
+                .await?
+        }
+    };
+
+    Ok(())
+}
+
+async fn process_new_reminder(
+    bot: Bot,
+    msg: Message,
+    arg: String,
+    db: Arc<Mutex<PgConnection>>,
+) -> Result<Message, RequestError> {
+    let blank_index = arg.find(" ").unwrap_or(0);
+    let (c, exp) = arg.split_at(blank_index);
+
+    // TODO: check if administrator
+    log::info!(
+        "received new reminder request from {}, cron expression '{exp}'",
+        msg.chat.id
+    );
+
+    log::trace!("parsing cron expression");
+
+    let mut parse_result = match parse_cron_exp(exp, &Utc::now()) {
+        Ok(result) => result,
+        Err(why) => {
+            log::trace!("cron expression not valid, {:?}", why);
+
+            return bot
+                .send_message(msg.chat.id, format!("{exp} 不是一个有效的 cron 表达式"))
+                .await;
+        }
+    };
+
+    log::trace!("inserting data to database");
+
+    let result = save_new_reminder(
+        msg.chat.id.0,
+        msg.chat.id.0,
+        String::from(c),
+        String::from(exp),
+        db,
+    );
+    if result.is_err() {
+        log::warn!(
+            "error when insert reminder data: {:?}",
+            result.err().unwrap()
+        );
+        return bot
+            .send_message(msg.chat.id, "出现了一些问题，请稍后再试")
+            .await;
     }
 
-    let config = load_config();
-    let bot = Bot::new(config.bot_token);
-    teloxide::repl(bot, |bot: Bot, msg: Message| async move {
-        bot.send_message(
-            msg.chat.id,
-            format!("your message is: {}", msg.text().unwrap_or("no text")),
-        )
-        .await?;
-        Ok(())
-    })
-    .await;
+    log::trace!("get next 5th runs time");
+    let mut next_5_runs = "好的，你的提醒项已经保存，将来 5 次提醒时间如下：\n".to_string();
+    next_5_runs.push_str(parse_result.to_string().as_str());
+    next_5_runs.push_str("\n");
+    for _ in 0..5 {
+        parse_result = cron_parser::parse(exp, &parse_result).unwrap();
+        next_5_runs.push_str(parse_result.to_string().as_str());
+        next_5_runs.push_str("\n");
+    }
+    bot.send_message(msg.chat.id, next_5_runs).await
 }
