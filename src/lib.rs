@@ -16,7 +16,7 @@ pub fn parse_cron_exp<Tz: TimeZone>(
     dt: &DateTime<Tz>,
 ) -> Result<DateTime<Tz>, ParseError> {
     // check number of expression fields, because cron_parser library won't do this check
-    if exp.trim().split(" ").count() < 5 {
+    if exp.trim().split(' ').count() < 5 {
         return Err(ParseError::InvalidCron);
     }
 

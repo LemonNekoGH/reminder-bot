@@ -1,4 +1,3 @@
-use crate::establish_connection;
 use crate::schema::reminders;
 use diesel::prelude::*;
 use std::ops::DerefMut;
@@ -56,6 +55,7 @@ pub fn save_new_reminder(
 
 #[test]
 fn test_save_new_reminder() {
+    use crate::establish_connection;
     use crate::schema::reminders::dsl::reminders;
     use crate::schema::reminders::id;
     // save
