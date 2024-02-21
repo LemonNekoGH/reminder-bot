@@ -1,0 +1,74 @@
+name: Build
+
+permissions:
+  packages: write
+
+on:
+  push:
+    tags:
+      - *
+
+jobs:
+  check-tag-and-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Check version in manifest
+        run: |
+          cargo install cargo-get
+          if [[ $(cargo-get package.version) != '${{ github.ref_name }}' ]]; then
+            exit 1
+          fi
+
+  build-and-push-docker-image:
+    name: Build and push docker image
+    runs-on: ubuntu-latest
+    needs:
+      - check-tag-and-version
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to GitHub
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build And Push Docker Image
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ghcr.io/lemonnekogh/reminder-bot:${{ github.ref_name }}
+            ghcr.io/lemonnekogh/reminder-bot:latest
+
+  build-and-upload-release:
+    name: Build and upload release
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Build
+        run: cargo build --release
+#      - name: Upload
+#        uses: softprops/action-gh-release@v1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-artifact
+          path: target/release/reminder_bot(.exe)
+
+  send-tag-released-message:
+    runs-on: ubuntu-latest
+    needs: [build-and-push-docker-image, build-and-upload-release]
+    steps:
+      - name: Send tag released message
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TG_TO }}
+          token: ${{ secrets.TG_TOKEN }}
+          format: markdown
+          message: |
+            reminder_bot [${{ github.ref_name }}]((https://github.com/LemonNekoGH/reminder_bot/releases/tag/${{ github.ref_name }})) released

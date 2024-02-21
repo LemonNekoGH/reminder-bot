@@ -1,0 +1,26 @@
+name: PR Check
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        components: rustfmt
+    - name: Test build
+      run: cargo build
+    - name: Unit test
+      run: cargo test --all-features
+    - name: Format
+      run: |
+        cargo check --all
+        if [[ $(git status --porcelain) == "" ]] then; exit 0; else exit 1; fi
+    - name: Lint
+      run: |
+        cargo clippy --fix
+        if [[ $(git status --porcelain) == "" ]] then; exit 0; else exit 1; fi
