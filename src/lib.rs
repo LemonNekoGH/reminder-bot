@@ -8,7 +8,7 @@ pub mod schema;
 
 pub fn establish_connection() -> PgConnection {
     let db_url = env::var("DB_URL").expect("env variable DB_URL must be set");
-    PgConnection::establish(&db_url).unwrap_or_else(|_| panic!("error connecting to {}", db_url))
+    PgConnection::establish(&db_url).unwrap()
 }
 
 pub fn parse_cron_exp<Tz: TimeZone>(

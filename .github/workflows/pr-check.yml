@@ -32,11 +32,14 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v4
-      - name: Get postgres service IP and do unit test
-        run: |
-          apt update && apt install dnsutils libpq-dev -y
-          export DB_URL="postgresql://reminder_bot:reminder_bot@$(nslookup postgres | awk -F': ' 'NR==6 { print $2 } '):15432/reminder_bot"
-          cargo test --all
+      - name: Install diesel
+        run: cargo install diesel_cli --no-default-features --features postgres
+      - name: Run migration
+        run: diesel migration run --database-url postgresql://reminder_bot:reminder_bot@postgres:15432/reminder_bot
+      - name: Run tests
+        run: cargo test --all
+        env:
+          DB_URL: postgresql://reminder_bot:reminder_bot@postgres:15432/reminder_bot
 
   lint:
     runs-on: ubuntu-latest

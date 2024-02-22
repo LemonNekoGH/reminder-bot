@@ -11,14 +11,15 @@ on:
 jobs:
   check-tag-and-version:
     runs-on: ubuntu-latest
+    container: rust:1.76
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Check version in manifest
         run: |
           cargo install cargo-get
-          if [[ $(cargo-get package.version) != '${{ github.ref_name }}' ]]; then
-            exit 1
+          version="$(cargo-get package.version)"
+          if [[ $version != '${{ github.ref_name }}' ]]
+          then exit 1
           fi
 
   build-and-push-docker-image:
@@ -62,7 +63,9 @@ jobs:
 
   send-tag-released-message:
     runs-on: ubuntu-latest
-    needs: [build-and-push-docker-image, build-and-upload-release]
+    needs:
+      - build-and-push-docker-image
+      - build-and-upload-release
     steps:
       - name: Send tag released message
         uses: appleboy/telegram-action@master
