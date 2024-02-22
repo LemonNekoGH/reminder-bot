@@ -6,6 +6,7 @@ on:
 
 jobs:
   lint:
+    container: rust:1.76
     services:
       db:
         image: postgres:alpine
@@ -15,12 +16,14 @@ jobs:
           POSTGRES_PASSWORD: reminder_bot
         ports:
           - 15432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: actions-rust-lang/setup-rust-toolchain@v1
-      with:
-        components: rustfmt
     - name: Test build
       run: cargo build
     - name: Unit test
