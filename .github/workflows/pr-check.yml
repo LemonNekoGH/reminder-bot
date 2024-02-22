@@ -6,6 +6,7 @@ on:
 
 jobs:
   lint:
+    runs-on: ubuntu-latest
     container: rust:1.76
     services:
       db:
@@ -21,7 +22,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     - name: Test build
