@@ -6,6 +6,15 @@ on:
 
 jobs:
   lint:
+    services:
+      db:
+        image: postgres:alpine
+        env:
+          POSTGRES_DB: reminder_bot
+          POSTGRES_USER: reminder_bot
+          POSTGRES_PASSWORD: reminder_bot
+        ports:
+          - 15432:5432
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -16,6 +25,8 @@ jobs:
       run: cargo build
     - name: Unit test
       run: cargo test --all-features
+      env:
+        DB_URL: postgresql://reminder_bot:reminder_bot@db:15432/reminder_bot
     - name: Format
       run: |
         cargo check --all
