@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: On open
         uses: appleboy/telegram-action@master
-        if: github.event.action == "opened"
+        if: github.event.action == 'opened'
         with:
           to: ${{ secrets.TG_TO }}
           token: ${{ secrets.TG_TOKEN }}
@@ -21,7 +21,7 @@ jobs:
 
       - name: On close
         uses: appleboy/telegram-action@master
-        if: github.event.action == "close" && !github.event.pull_request.merged
+        if: github.event.action == 'close' && !github.event.pull_request.merged
         with:
           to: ${{ secrets.TG_TO }}
           token: ${{ secrets.TG_TOKEN }}
@@ -41,7 +41,7 @@ jobs:
 
       - name: On reopen
         uses: appleboy/telegram-action@master
-        if: github.event.action == "reopen"
+        if: github.event.action == 'reopen'
         with:
           to: ${{ secrets.TG_TO }}
           token: ${{ secrets.TG_TOKEN }}

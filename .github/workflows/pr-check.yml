@@ -5,12 +5,20 @@ on:
       - main
 
 jobs:
-  lint:
+  test-build:
+    runs-on: ubuntu-latest
+    container: rust:1.76
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test build
+        run: cargo build
+
+  unit-test:
     runs-on: ubuntu-latest
     container: rust:1.76
     services:
-      db:
-        image: postgres:alpine
+      postgres:
+        image: postgres:15.4-alpine
         env:
           POSTGRES_DB: reminder_bot
           POSTGRES_USER: reminder_bot
@@ -23,13 +31,17 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-    - uses: actions/checkout@v4
-    - name: Test build
-      run: cargo build
-    - name: Unit test
-      run: cargo test --all-features
-      env:
-        DB_URL: postgresql://reminder_bot:reminder_bot@db:15432/reminder_bot
+      - uses: actions/checkout@v4
+      - name: Get postgres service IP and do unit test
+        run: |
+          apt update && apt install dnsutils libpq-dev -y
+          export DB_URL="postgresql://reminder_bot:reminder_bot@$(nslookup postgres | awk -F': ' 'NR==6 { print $2 } '):15432/reminder_bot"
+          cargo test --all
+
+  lint:
+    runs-on: ubuntu-latest
+    container: rust:1.76
+    steps:
     - name: Format
       run: |
         cargo check --all
