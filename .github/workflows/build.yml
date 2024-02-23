@@ -55,13 +55,13 @@ jobs:
         uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: install postgresql15
-        if: ${{ matrix.os == windows-latest }}
+        if: ${{ matrix.os == 'windows-latest' }}
       - name: Link postgres 15 lib dir for windows
         run: set PQ_LIB_DIR="C:\ProgramData\chocolatey\lib\postgresql10"
-        if: ${{ matrix.os == windows-latest }}
+        if: ${{ matrix.os == 'windows-latest' }}
       - name: Set path for windows
         run: set path=%path%;C:\Program Files\PostgreSQL\10\lib;C:\Program Files\PostgreSQL\10\bin
-        if: ${{ matrix.os == windows-latest }}
+        if: ${{ matrix.os == 'windows-latest' }}
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Build
         run: cargo build --release
