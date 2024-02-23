@@ -44,8 +44,8 @@ jobs:
             ghcr.io/lemonnekogh/reminder-bot:latest
 
   build-and-upload-release:
-    needs:
-      - check-tag-and-version
+#    needs:
+#      - check-tag-and-version
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -63,7 +63,8 @@ jobs:
           target: ${{ matrix.target }}
       - name: Build
         run: cargo build --release
+      - run: ls target/release
       - uses: actions/upload-artifact@v4
         with:
           name: test-artifact
-          path: target/${{ matrix.target }}/release/reminder_bot
+          path: target/release/reminder_bot
