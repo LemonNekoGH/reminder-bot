@@ -45,11 +45,22 @@ jobs:
     runs-on: ubuntu-latest
     container: rust:1.76
     steps:
+    - uses: actions/checkout@v4
+    - name: Install formatter and linter
+      run: |
+        rustup component add rustfmt
+        rustup component add clippy
     - name: Format
       run: |
-        cargo check --all
-        if [[ $(git status --porcelain) == "" ]] then; exit 0; else exit 1; fi
+        cargo fmt
+        message="$(git status --porcelain)"
+        if [ "$message" != '' ]
+        then exit 1
+        fi
     - name: Lint
       run: |
         cargo clippy --fix
-        if [[ $(git status --porcelain) == "" ]] then; exit 0; else exit 1; fi
+        message="$(git status --porcelain)"
+        if [ "$message" != '' ]
+        then exit 1
+        fi

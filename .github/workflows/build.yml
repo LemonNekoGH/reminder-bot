@@ -18,7 +18,7 @@ jobs:
         run: |
           cargo install cargo-get
           version="$(cargo-get package.version)"
-          if [[ $version != '${{ github.ref_name }}' ]]
+          if [ "$version" != '${{ github.ref_name }}' ]
           then exit 1
           fi
 
