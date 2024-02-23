@@ -46,6 +46,10 @@ jobs:
     container: rust:1.76
     steps:
     - uses: actions/checkout@v4
+    - name: Set git username and email
+      run: |
+        git config --global user.name "GitHub Actions Bot"
+        git config --global user.email "<>"
     - name: Install formatter and linter
       run: |
         rustup component add rustfmt
