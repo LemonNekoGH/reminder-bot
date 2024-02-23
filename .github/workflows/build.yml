@@ -64,5 +64,50 @@ jobs:
           PQ_LIB_DIR: C:\Program Files\PostgreSQL\15\lib
       - uses: actions/upload-artifact@v4
         with:
-          name: reminder_bot
+          name: reminder_bot_x86_64_windows
+          path: target/release/reminder_bot.exe
+
+  build-and-upload-release-linux:
+    # needs:
+      # - check-tag-and-version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Build
+        run: |
+          cargo build --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reminder_bot_x86_64_linux
+          path: target/release/reminder_bot
+
+  build-and-upload-release-macos-arm64:
+    # needs:
+      # - check-tag-and-version
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Build
+        run: |
+          cargo build --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reminder_bot_aarch64_macos
+          path: target/release/reminder_bot
+
+  build-and-upload-release-macos-x86-64:
+    # needs:
+      # - check-tag-and-version
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Build
+        run: |
+          cargo build --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reminder_bot_x86_64_macos
           path: target/release/reminder_bot
