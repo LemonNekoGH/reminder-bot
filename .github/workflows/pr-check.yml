@@ -35,11 +35,11 @@ jobs:
       - name: Install diesel
         run: cargo install diesel_cli --no-default-features --features postgres
       - name: Run migration
-        run: diesel migration run --database-url postgresql://reminder_bot:reminder_bot@postgres:15432/reminder_bot
+        run: diesel migration run --database-url postgresql://reminder_bot:reminder_bot@postgres:5432/reminder_bot
       - name: Run tests
         run: cargo test --all
         env:
-          DB_URL: postgresql://reminder_bot:reminder_bot@postgres:15432/reminder_bot
+          DB_URL: postgresql://reminder_bot:reminder_bot@postgres:5432/reminder_bot
 
   lint:
     runs-on: ubuntu-latest
