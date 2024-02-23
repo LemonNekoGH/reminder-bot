@@ -52,6 +52,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install PostgreSQL
+        uses: crazy-max/ghaction-chocolatey@v3
+        with:
+          args: install postgresql -y
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Build
         run: |
