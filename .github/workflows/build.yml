@@ -44,30 +44,26 @@ jobs:
             ghcr.io/lemonnekogh/reminder-bot:latest
 
   build-and-upload-release:
-    name: Build and upload release
+    needs:
+      - check-tag-and-version
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+        target:
+          - aarch64-apple-darwin
+          - aarch64-unknown-linux-gnu
+          - aarch64-pc-windows-msvc
+          - x86_64-unknown-linux-gnu
+          - x86_64-apple-darwin
+          - x86_64-pc-windows-msvc
     steps:
       - uses: actions/checkout@v4
-      - name: Install postgres 15 for windows
-        uses: crazy-max/ghaction-chocolatey@v3
-        with:
-          args: install postgresql15
-        if: ${{ matrix.os == 'windows-latest' }}
-      - name: Link postgres 15 lib dir for windows
-        run: set PQ_LIB_DIR="C:\ProgramData\chocolatey\lib\postgresql10"
-        if: ${{ matrix.os == 'windows-latest' }}
-      - name: Set path for windows
-        run: set path="%path%;C:\Program Files\PostgreSQL\10\lib;C:\Program Files\PostgreSQL\10\bin"
-        if: ${{ matrix.os == 'windows-latest' }}
       - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: ${{ matrix.target }}
       - name: Build
         run: cargo build --release
-#      - name: Upload
-#        uses: softprops/action-gh-release@v1
       - uses: actions/upload-artifact@v4
         with:
           name: test-artifact
-          path: target/release/reminder_bot(.exe)
+          path: target/${{ matrix.target }}/release/reminder_bot
