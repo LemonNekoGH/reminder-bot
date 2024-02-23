@@ -51,6 +51,17 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - name: Install postgres 15 for windows
+        uses: crazy-max/ghaction-chocolatey@v3
+        with:
+          args: install postgresql15
+        if: ${{ matrix.os == windows-latest }}
+      - name: Link postgres 15 lib dir for windows
+        run: set PQ_LIB_DIR="C:\ProgramData\chocolatey\lib\postgresql10"
+        if: ${{ matrix.os == windows-latest }}
+      - name: Set path for windows
+        run: set path=%path%;C:\Program Files\PostgreSQL\10\lib;C:\Program Files\PostgreSQL\10\bin
+        if: ${{ matrix.os == windows-latest }}
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Build
         run: cargo build --release
@@ -60,18 +71,3 @@ jobs:
         with:
           name: test-artifact
           path: target/release/reminder_bot(.exe)
-
-  send-tag-released-message:
-    runs-on: ubuntu-latest
-    needs:
-      - build-and-push-docker-image
-      - build-and-upload-release
-    steps:
-      - name: Send tag released message
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TG_TO }}
-          token: ${{ secrets.TG_TOKEN }}
-          format: markdown
-          message: |
-            reminder_bot [${{ github.ref_name }}]((https://github.com/LemonNekoGH/reminder_bot/releases/tag/${{ github.ref_name }})) released
