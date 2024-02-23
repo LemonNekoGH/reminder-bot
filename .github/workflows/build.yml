@@ -55,11 +55,13 @@ jobs:
       - name: Install PostgreSQL
         uses: crazy-max/ghaction-chocolatey@v3
         with:
-          args: install postgresql -y
+          args: install postgresql15 -y
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Build
         run: |
           cargo build --release
+        env:
+          PQ_LIB_DIR: C:\Program Files\PostgreSQL\15\lib
       - uses: actions/upload-artifact@v4
         with:
           name: reminder_bot
