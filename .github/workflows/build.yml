@@ -4,68 +4,59 @@ permissions:
   packages: write
 
 on:
-  push:
-    tags:
-      - "*"
+  # push:
+  #   tags:
+  #     - "*"
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  check-tag-and-version:
-    runs-on: ubuntu-latest
-    container: rust:1.76
-    steps:
-      - uses: actions/checkout@v4
-      - name: Check version in manifest
-        run: |
-          cargo install cargo-get
-          version="$(cargo-get package.version)"
-          if [ "$version" != '${{ github.ref_name }}' ]
-          then exit 1
-          fi
+  # check-tag-and-version:
+  #   runs-on: ubuntu-latest
+  #   container: rust:1.76
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Check version in manifest
+  #       run: |
+  #         cargo install cargo-get
+  #         version="$(cargo-get package.version)"
+  #         if [ "$version" != '${{ github.ref_name }}' ]
+  #         then exit 1
+  #         fi
 
-  build-and-push-docker-image:
-    name: Build and push docker image
-    runs-on: ubuntu-latest
-    needs:
-      - check-tag-and-version
-    steps:
-      - uses: actions/checkout@v4
-      - name: Login to GitHub
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build And Push Docker Image
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: |
-            ghcr.io/lemonnekogh/reminder-bot:${{ github.ref_name }}
-            ghcr.io/lemonnekogh/reminder-bot:latest
+  # build-and-push-docker-image:
+  #   name: Build and push docker image
+  #   runs-on: ubuntu-latest
+  #   needs:
+  #     - check-tag-and-version
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Login to GitHub
+  #       uses: docker/login-action@v1
+  #       with:
+  #         registry: ghcr.io
+  #         username: ${{ github.actor }}
+  #         password: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: Build And Push Docker Image
+  #       uses: docker/build-push-action@v2
+  #       with:
+  #         push: true
+  #         tags: |
+  #           ghcr.io/lemonnekogh/reminder-bot:${{ github.ref_name }}
+  #           ghcr.io/lemonnekogh/reminder-bot:latest
 
-  build-and-upload-release:
-    needs:
-      - check-tag-and-version
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        target:
-          - aarch64-apple-darwin
-          - aarch64-unknown-linux-gnu
-          - aarch64-pc-windows-msvc
-          - x86_64-unknown-linux-gnu
-          - x86_64-apple-darwin
-          - x86_64-pc-windows-msvc
+  build-and-upload-release-windows:
+    # needs:
+      # - check-tag-and-version
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          target: ${{ matrix.target }}
       - name: Build
-        run: cargo build --release --target ${{ matrix.target }}
-      - run: ls target
-      - run: exit 1
+        run: |
+          cargo build --release
       - uses: actions/upload-artifact@v4
         with:
-          name: reminder_bot_${{ matrix.target }}
+          name: reminder_bot
           path: target/release/reminder_bot
