@@ -1,7 +1,8 @@
 [package]
 name = "reminder_bot"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 edition = "2021"
+rust-version = "1.68.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -16,3 +17,10 @@ dotenvy = "0.15.7"
 diesel = { version = "2.1.0", features = ["postgres", "uuid"] }
 chrono-tz = "0.8.6"
 uuid = "1.7.0"
+
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true
+codegen-units = 1
+panic = "abort"

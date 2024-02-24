@@ -67,7 +67,7 @@ async fn process_cmd(
                 .await?
         }
         Command::NewReminder(arg) => process_new_reminder(bot, msg, arg, db).await?,
-        Command::DeleteReminder(id) => {
+        Command::DeleteReminder(_id) => {
             bot.send_message(msg.chat.id, "command not implemented")
                 .await?
         }
@@ -75,7 +75,7 @@ async fn process_cmd(
             bot.send_message(msg.chat.id, "command not implemented")
                 .await?
         }
-        Command::SetAllowAllMember(allow) => {
+        Command::SetAllowAllMember(_allow) => {
             bot.send_message(msg.chat.id, "command not implemented")
                 .await?
         }
@@ -83,7 +83,7 @@ async fn process_cmd(
             bot.send_message(msg.chat.id, "command not implemented")
                 .await?
         }
-        Command::SetTimezone(timezone) => {
+        Command::SetTimezone(_timezone) => {
             bot.send_message(msg.chat.id, "command not implemented")
                 .await?
         }
@@ -98,7 +98,7 @@ async fn process_new_reminder(
     arg: String,
     db: Arc<Mutex<PgConnection>>,
 ) -> Result<Message, RequestError> {
-    let blank_index = arg.find(" ").unwrap_or(0);
+    let blank_index = arg.find(' ').unwrap_or(0);
     let (c, exp) = arg.split_at(blank_index);
 
     // TODO: check if administrator
@@ -142,11 +142,11 @@ async fn process_new_reminder(
     log::trace!("get next 5th runs time");
     let mut next_5_runs = "好的，你的提醒项已经保存，将来 5 次提醒时间如下：\n".to_string();
     next_5_runs.push_str(parse_result.to_string().as_str());
-    next_5_runs.push_str("\n");
+    next_5_runs.push('\n');
     for _ in 0..5 {
         parse_result = cron_parser::parse(exp, &parse_result).unwrap();
         next_5_runs.push_str(parse_result.to_string().as_str());
-        next_5_runs.push_str("\n");
+        next_5_runs.push('\n');
     }
     bot.send_message(msg.chat.id, next_5_runs).await
 }

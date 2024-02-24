@@ -1,0 +1,71 @@
+name: PR Check
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    container: rust:1.76
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test build
+        run: cargo build
+
+  unit-test:
+    runs-on: ubuntu-latest
+    container: rust:1.76
+    services:
+      postgres:
+        image: postgres:15.4-alpine
+        env:
+          POSTGRES_DB: reminder_bot
+          POSTGRES_USER: reminder_bot
+          POSTGRES_PASSWORD: reminder_bot
+        ports:
+          - 15432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install diesel
+        run: cargo install diesel_cli --no-default-features --features postgres
+      - name: Run migration
+        run: diesel migration run --database-url postgresql://reminder_bot:reminder_bot@postgres:5432/reminder_bot
+      - name: Run tests
+        run: cargo test --all
+        env:
+          DB_URL: postgresql://reminder_bot:reminder_bot@postgres:5432/reminder_bot
+
+  lint:
+    runs-on: ubuntu-latest
+    container: rust:1.76
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set git username and email
+      run: |
+        git config --global user.name "GitHub Actions Bot"
+        git config --global user.email "<>"
+        git config --global --add safe.directory /__w/reminder_bot/reminder_bot
+    - name: Install formatter and linter
+      run: |
+        rustup component add rustfmt
+        rustup component add clippy
+    - name: Format
+      run: |
+        cargo fmt
+        message="$(git status --porcelain)"
+        if [ "$message" != '' ]
+        then exit 1
+        fi
+    - name: Lint
+      run: |
+        cargo clippy --fix
+        message="$(git status --porcelain)"
+        if [ "$message" != '' ]
+        then exit 1
+        fi

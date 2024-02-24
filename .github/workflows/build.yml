@@ -1,0 +1,115 @@
+name: Build
+
+permissions:
+  packages: write
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  check-tag-and-version:
+    runs-on: ubuntu-latest
+    container: rust:1.76
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check version in manifest
+        run: |
+          cargo install cargo-get
+          version="$(cargo-get package.version)"
+          if [ "$version" != '${{ github.ref_name }}' ]
+          then exit 1
+          fi
+
+  build-and-push-docker-image:
+    name: Build and push docker image
+    runs-on: ubuntu-latest
+    needs:
+      - check-tag-and-version
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to GitHub
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build And Push Docker Image
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ghcr.io/lemonnekogh/reminder-bot:${{ github.ref_name }}
+            ghcr.io/lemonnekogh/reminder-bot:latest
+
+  build-and-upload-release-amd64-windows:
+    needs:
+      - check-tag-and-version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL
+        uses: crazy-max/ghaction-chocolatey@v3
+        with:
+          args: install postgresql15 -y
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Build
+        run: |
+          cargo build --release
+        env:
+          PQ_LIB_DIR: C:\Program Files\PostgreSQL\15\lib
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reminder_bot_amd64_windows
+          path: target/release/reminder_bot.exe
+
+  build-and-upload-release-amd64-linux:
+    needs:
+      - check-tag-and-version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Build
+        run: |
+          cargo build --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reminder_bot_amd64_linux
+          path: target/release/reminder_bot
+
+  build-and-upload-release-arm64-macos:
+    needs:
+      - check-tag-and-version
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Homebrew/actions/setup-homebrew@master
+      - name: Install libraries
+        run: |
+          brew install libpq
+          brew link --force libpq
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Build
+        run: |
+          cargo build --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reminder_bot_arm64_macos
+          path: target/release/reminder_bot
+
+  build-and-upload-release-amd64-macos:
+    needs:
+      - check-tag-and-version
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Build
+        run: |
+          cargo build --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reminder_bot_amd64_macos
+          path: target/release/reminder_bot
