@@ -88,6 +88,9 @@ jobs:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
+      - uses: Homebrew/actions/setup-homebrew@master
+      - name: Install libraries
+        run: brew install libpq
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Build
         run: |
