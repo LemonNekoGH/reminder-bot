@@ -1,12 +1,12 @@
 mod config;
-mod schema;
 mod models;
+mod schema;
 
-use std::str::FromStr;
 use chrono::Utc;
 use diesel::prelude::*;
 use dotenvy::dotenv;
 use models::{get_all_reminders, save_new_reminder};
+use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use teloxide::{prelude::*, utils::command::BotCommands, RequestError};
 
@@ -49,7 +49,7 @@ async fn main() {
     println!("Version: {_version}");
     println!("========================");
 
-    let db = Arc::new(Mutex::new(PgConnection::establish(&db_url).unwrap()));
+    let db = Arc::new(Mutex::new(PgConnection::establish(db_url).unwrap()));
 
     let db_cloned_2 = db.clone();
     let bot_token_cloned_2 = bot_token.clone();
