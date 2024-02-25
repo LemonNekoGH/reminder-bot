@@ -53,13 +53,24 @@ pub fn save_new_reminder(
         .get_result(db)
 }
 
+pub fn get_all_reminders(db: Arc<Mutex<PgConnection>>) -> QueryResult<Vec<Reminders>> {
+    use crate::schema::reminders::dsl::reminders;
+
+    let mut db_binding = db.lock().unwrap();
+    let db_unlocked = db_binding.deref_mut();
+    reminders.select(Reminders::as_select()).load(db_unlocked)
+}
+
 #[test]
 fn test_save_new_reminder() {
-    use crate::establish_connection;
     use crate::schema::reminders::dsl::reminders;
     use crate::schema::reminders::id;
+    use std::env;
+
     // save
-    let db = Arc::new(Mutex::new(establish_connection()));
+    let db = Arc::new(Mutex::new(
+        PgConnection::establish(env::var("DB_URL").unwrap().as_str()).unwrap(),
+    ));
     let save_result = save_new_reminder(
         1234,
         4321,
