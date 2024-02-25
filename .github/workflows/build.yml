@@ -35,6 +35,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build And Push Docker Image
         uses: docker/build-push-action@v2
         with:
@@ -42,6 +47,8 @@ jobs:
           tags: |
             ghcr.io/lemonnekogh/reminder-bot:${{ github.ref_name }}
             ghcr.io/lemonnekogh/reminder-bot:latest
+            lemonnekodh/reminder-bot:${{ github.ref_name }}
+            lemonnekodh/reminder-bot:latest
 
   build-and-upload-release-amd64-windows:
     needs:
@@ -113,3 +120,21 @@ jobs:
         with:
           name: reminder_bot_amd64_macos
           path: target/release/reminder_bot
+
+  upload-to-release:
+    needs:
+      - build-and-upload-release-amd64-windows
+      - build-and-upload-release-amd64-linux
+      - build-and-upload-release-amd64-macos
+      - build-and-upload-release-arm64-macos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            reminder_bot_amd64_windows.zip
+            reminder_bot_amd64_linux.zip
+            reminder_bot_amd64_macos.zip
+            reminder_bot_arm64_macos.zip
+          generate_release_notes: true
