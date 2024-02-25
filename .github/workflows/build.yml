@@ -130,11 +130,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
+      - run: ls
       - uses: softprops/action-gh-release@v1
         with:
           files: |
-            reminder_bot_amd64_windows.zip
-            reminder_bot_amd64_linux.zip
-            reminder_bot_amd64_macos.zip
-            reminder_bot_arm64_macos.zip
+            reminder_bot*
           generate_release_notes: true
