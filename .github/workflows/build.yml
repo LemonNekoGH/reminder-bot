@@ -1,7 +1,8 @@
 name: Build
 
 permissions:
-  packages: write
+  packages: write # for images
+  contents: write # for release
 
 on:
   push:
