@@ -1,11 +1,12 @@
 mod config;
 mod schema;
+mod models;
 
+use std::str::FromStr;
 use chrono::Utc;
 use diesel::prelude::*;
 use dotenvy::dotenv;
-use reminder_bot::models::{get_all_reminders, save_new_reminder};
-use reminder_bot::parse_cron_exp;
+use models::{get_all_reminders, save_new_reminder};
 use std::sync::{Arc, Mutex};
 use teloxide::{prelude::*, utils::command::BotCommands, RequestError};
 
@@ -185,7 +186,7 @@ async fn process_new_reminder(
 
     log::trace!("parsing cron expression");
 
-    let mut parse_result = match parse_cron_exp(exp, &Utc::now()) {
+    let parse_result = match cron::Schedule::from_str(exp) {
         Ok(result) => result,
         Err(why) => {
             log::trace!("cron expression not valid, {:?}", why);
@@ -217,12 +218,10 @@ async fn process_new_reminder(
 
     log::trace!("get next 5th runs time");
     let mut next_5_runs = "好的，你的提醒项已经保存，将来 5 次提醒时间如下：\n".to_string();
-    next_5_runs.push_str(parse_result.to_string().as_str());
-    next_5_runs.push('\n');
-    for _ in 0..5 {
-        parse_result = cron_parser::parse(exp, &parse_result).unwrap();
-        next_5_runs.push_str(parse_result.to_string().as_str());
+    for date_time in parse_result.upcoming(Utc).take(5) {
+        next_5_runs.push_str(date_time.to_string().as_str());
         next_5_runs.push('\n');
     }
+
     bot.send_message(msg.chat.id, next_5_runs).await
 }

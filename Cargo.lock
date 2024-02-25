@@ -196,15 +196,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cron-parser"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa8b40ccc59e09cc54bec675bea0e79dae34f5b900c8c5e06d8d6db884107adb"
-dependencies = [
- "chrono",
-]
-
-[[package]]
 name = "darling"
 version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1108,7 +1099,7 @@ version = "0.1.0-alpha.1"
 dependencies = [
  "chrono",
  "chrono-tz",
- "cron-parser",
+ "cron",
  "diesel",
  "dotenvy",
  "log",
