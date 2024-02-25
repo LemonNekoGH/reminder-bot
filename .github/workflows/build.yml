@@ -135,15 +135,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
-      - run: ls reminder_bot_amd64_linux
-      - run: ls reminder_bot_amd64_windows
-      - run: ls reminder_bot_amd64_macos
-      - run: ls reminder_bot_arm64_macos
+      - name: Rename artifacts
+        run: |
+          mv reminder_bot_amd64_linux/reminder_bot reminder_bot_amd64_linux
+          mv reminder_bot_amd64_windows/reminder_bot.exe reminder_bot_amd64_windows.exe
+          mv reminder_bot_amd64_macos/reminder_bot reminder_bot_amd64_macos
+          mv reminder_bot_arm64_macos/reminder_bot reminder_bot_arm64_macos
       - uses: softprops/action-gh-release@v1
         with:
           files: |
-            reminder_bot_amd64_linux/reminder_bot_amd64_linux.zip
-            reminder_bot_amd64_windows/reminder_bot_amd64_windows.zip
-            reminder_bot_amd64_macos/reminder_bot_amd64_macos.zip
-            reminder_bot_arm64_macos/reminder_bot_arm64_macos.zip
+            reminder_bot_amd64_linux
+            reminder_bot_amd64_windows.exe
+            reminder_bot_amd64_macos
+            reminder_bot_arm64_macos
           generate_release_notes: true
